@@ -15,6 +15,8 @@ CREATE TABLE "Category" (
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
     "name" TEXT NOT NULL,
+    "slug" TEXT NOT NULL,
+    "color" TEXT NOT NULL,
     "isValid" BOOLEAN NOT NULL DEFAULT true
 );
 
