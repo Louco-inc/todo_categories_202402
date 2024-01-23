@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
 import { Text, IconButton, Tag } from "@chakra-ui/react";
 import { DeleteIcon } from "@chakra-ui/icons";
+import { MdAddCircle } from "react-icons/md";
 
 type CategoryType = {
   id?: number;
@@ -66,11 +67,21 @@ export default function TodoCategoryListPage() {
     <>
       <Header />
       <div className="flex justify-around m-8">
-        <div className="bg-gray-100">
+        <div className="bg-gray-100 min-w-60">
           <div className="h-4 bg-todo-color rounded-t-xl"></div>
-          <Text fontSize="2xl" className="font-bold mb-2 ml-2">
-            Todo
-          </Text>
+          <div className="flex justify-between mx-4">
+            <Text fontSize="2xl" className="font-bold mb-2">
+              Todo
+            </Text>
+            <IconButton
+              variant="unstyled"
+              className="!min-w-0 !min-h-0"
+              aria-label="Search database"
+              fontSize="24"
+              icon={<MdAddCircle />}
+              onClick={() => console.log("onClick")}
+            />
+          </div>
           <DragDropContext onDragEnd={onDragEndTest}>
             <Droppable droppableId="droppableId">
               {(provided) => (
@@ -93,7 +104,7 @@ export default function TodoCategoryListPage() {
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
                           >
-                            <div className="flex m-4 p-4 bg-white rounded-lg max-w-96">
+                            <div className="flex justify-between m-4 p-4 bg-white rounded-lg max-w-96">
                               <div className="">
                                 {todo.categories.map((category) => {
                                   return (
@@ -105,14 +116,17 @@ export default function TodoCategoryListPage() {
                                     </Tag>
                                   );
                                 })}
-                                <Text>{todo.title}</Text>
-                                <div>{formattedDate(todo.completionDate)}</div>
+                                <Text fontSize="xl">{todo.title}</Text>
+                                <Text className="text-border-gray" fontSize="sm">
+                                  {formattedDate(todo.completionDate)}
+                                </Text>
                               </div>
                               <div>
                                 <IconButton
                                   variant="unstyled"
                                   className="!min-w-0 !min-h-0"
                                   aria-label="Search database"
+                                  fontSize="20"
                                   icon={<DeleteIcon />}
                                   onClick={() => {
                                     console.log(todo.id);
@@ -132,7 +146,7 @@ export default function TodoCategoryListPage() {
           </DragDropContext>
         </div>
         <div className="bg-gray-100">
-        <div className="h-4 bg-inprogress-color rounded-t-xl"></div>
+          <div className="h-4 bg-inprogress-color rounded-t-xl"></div>
           <Text fontSize="2xl" className="font-bold mb-2 ml-2">
             Inprogress
           </Text>
@@ -190,7 +204,7 @@ export default function TodoCategoryListPage() {
           </DragDropContext>
         </div>
         <div className="bg-gray-100">
-        <div className="h-4 bg-done-color rounded-t-xl"></div>
+          <div className="h-4 bg-done-color rounded-t-xl"></div>
           <Text fontSize="2xl" className="font-bold mb-2 ml-2">
             Done
           </Text>
