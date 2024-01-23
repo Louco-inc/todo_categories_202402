@@ -1,58 +1,45 @@
 import Header from "components/header";
 import { useEffect, useState } from "react";
 import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
-import { Text, IconButton, Tag } from "@chakra-ui/react";
+import {
+  Text,
+  IconButton,
+  Tag,
+  useDisclosure,
+  useToast,
+} from "@chakra-ui/react";
 import { DeleteIcon } from "@chakra-ui/icons";
 import { MdAddCircle } from "react-icons/md";
-
-type CategoryType = {
-  id?: number;
-  name: string;
-  color: string;
-  slug: string;
-  isValid: boolean;
-  todoLists: TodoType[];
-};
-
-type TodoStatusType = "todo" | "inProgress" | "done";
-
-type TodoFormType = {
-  id?: number;
-  title: string;
-  description?: string;
-  completionDate: string;
-  status: TodoStatusType;
-  categories: CategoryType[];
-};
-
-type TodoType = TodoFormType & {
-  id: number;
-  createdAt?: string;
-  updatedAt: string;
-};
-
-const formattedDate = (date: Date | string): string => {
-  const d: Date = (() => {
-    if (typeof date === "string") {
-      return new Date(date);
-    } else {
-      return date;
-    }
-  })();
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
+import { TodoFormType, TodoStatusType, TodoType } from "types";
+import { formattedDate } from "utils";
+import TodoFormModal from "components/TodoFormModal";
 
 export default function TodoCategoryListPage() {
   const [todoList, setTodoList] = useState<TodoType[]>([]);
+  const [inProgressList, setInProgressList] = useState<TodoType[]>([]);
+  const [doneList, setDoneList] = useState<TodoType[]>([]);
+  const [editingTodo, setEditingTodo] = useState<TodoType>();
+  const {
+    isOpen: isOpenTodoForm,
+    onOpen: onOpenTodoForm,
+    onClose: onCloseTodoForm,
+  } = useDisclosure();
+  const createdToast = useToast();
+
   useEffect(() => {
-    fetchTodoList();
+    init();
   }, []);
-  const fetchTodoList = async () => {
-    const res = await fetch("/api/todo_lists").then((r) => r.json());
-    setTodoList(res);
+
+  const init = async () => {
+    await Promise.all(
+      ["todo", "inProgress", "done"].map((status) => {
+        return fetch(`/api/todo_lists?status=${status}`).then((r) => r.json());
+      })
+    ).then(([resTodoList, resInProgressList, resDoneList]) => {
+      setTodoList(resTodoList);
+      setInProgressList(resInProgressList);
+      setDoneList(resDoneList);
+    });
   };
 
   const onDragEndTest = (result) => {
@@ -63,11 +50,41 @@ export default function TodoCategoryListPage() {
     setTodoList(items);
   };
 
+  const onSaveOrUpdateTodo = async (todoFormValue: TodoFormType) => {
+    // 登録の場合
+    if (!todoFormValue.id) {
+      const params = {
+        ...todoFormValue,
+        completionDate: new Date(todoFormValue.completionDate),
+      };
+      const res = await fetch("/api/todo_lists", {
+        method: "POST",
+        body: JSON.stringify(params),
+      }).then((r) => r.json());
+      const setterObj = {
+        todo: setTodoList,
+        inProgress: setInProgressList,
+        done: setDoneList,
+      };
+      const status: TodoStatusType = res.status;
+      const setter = setterObj[status];
+      console.log({ setter, res, setterObj });
+      setter((prev) => [res, ...prev]);
+      createdToast({
+        title: "タスクが登録されました。",
+        description: "",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
   return (
     <>
       <Header />
       <div className="flex justify-around m-8">
-        <div className="bg-gray-100 min-w-60">
+        <div className="bg-gray-100 w-96">
           <div className="h-4 bg-todo-color rounded-t-xl"></div>
           <div className="flex justify-between mx-4">
             <Text fontSize="2xl" className="font-bold mb-2">
@@ -79,7 +96,7 @@ export default function TodoCategoryListPage() {
               aria-label="Search database"
               fontSize="24"
               icon={<MdAddCircle />}
-              onClick={() => console.log("onClick")}
+              onClick={() => onOpenTodoForm()}
             />
           </div>
           <DragDropContext onDragEnd={onDragEndTest}>
@@ -109,6 +126,7 @@ export default function TodoCategoryListPage() {
                                 {todo.categories.map((category) => {
                                   return (
                                     <Tag
+                                      className="mr-1 mb-1"
                                       key={category.id}
                                       colorScheme={category.color}
                                     >
@@ -117,7 +135,10 @@ export default function TodoCategoryListPage() {
                                   );
                                 })}
                                 <Text fontSize="xl">{todo.title}</Text>
-                                <Text className="text-border-gray" fontSize="sm">
+                                <Text
+                                  className="text-border-gray"
+                                  fontSize="sm"
+                                >
                                   {formattedDate(todo.completionDate)}
                                 </Text>
                               </div>
@@ -145,78 +166,30 @@ export default function TodoCategoryListPage() {
             </Droppable>
           </DragDropContext>
         </div>
-        <div className="bg-gray-100">
+        <div className="bg-gray-100 w-96">
           <div className="h-4 bg-inprogress-color rounded-t-xl"></div>
-          <Text fontSize="2xl" className="font-bold mb-2 ml-2">
-            Inprogress
-          </Text>
+          <div className="flex justify-between mx-4">
+            <Text fontSize="2xl" className="font-bold mb-2">
+              Inprogress
+            </Text>
+            <IconButton
+              variant="unstyled"
+              className="!min-w-0 !min-h-0"
+              aria-label="Search database"
+              fontSize="24"
+              icon={<MdAddCircle />}
+              onClick={() => onOpenTodoForm()}
+            />
+          </div>
           <DragDropContext onDragEnd={onDragEndTest}>
             <Droppable droppableId="droppableId">
               {(provided) => (
                 <div
-                  className="todoList"
+                  className="inProgressList"
                   {...provided.droppableProps}
                   ref={provided.innerRef}
                 >
-                  {todoList.map((todo, index) => {
-                    return (
-                      <Draggable
-                        key={todo.id}
-                        draggableId={String(todo.id)}
-                        index={index}
-                      >
-                        {(provided) => (
-                          <div className="flex m-4 p-4 bg-white rounded-lg max-w-96">
-                            <div className="">
-                              {todo.categories.map((category) => {
-                                return (
-                                  <Tag
-                                    key={category.id}
-                                    colorScheme={category.color}
-                                  >
-                                    {category.name}
-                                  </Tag>
-                                );
-                              })}
-                              <Text>{todo.title}</Text>
-                              <div>{formattedDate(todo.completionDate)}</div>
-                            </div>
-                            <div>
-                              <IconButton
-                                variant="unstyled"
-                                className="!min-w-0 !min-h-0"
-                                aria-label="Search database"
-                                icon={<DeleteIcon />}
-                                onClick={() => {
-                                  console.log(todo.id);
-                                }}
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </Draggable>
-                    );
-                  })}
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
-          </DragDropContext>
-        </div>
-        <div className="bg-gray-100">
-          <div className="h-4 bg-done-color rounded-t-xl"></div>
-          <Text fontSize="2xl" className="font-bold mb-2 ml-2">
-            Done
-          </Text>
-          <DragDropContext onDragEnd={onDragEndTest}>
-            <Droppable droppableId="droppableId">
-              {(provided) => (
-                <div
-                  className="todoList"
-                  {...provided.droppableProps}
-                  ref={provided.innerRef}
-                >
-                  {todoList.map((todo, index) => {
+                  {inProgressList.map((todo, index) => {
                     return (
                       <Draggable
                         key={todo.id}
@@ -230,11 +203,12 @@ export default function TodoCategoryListPage() {
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
                           >
-                            <div className="flex m-4 p-4 bg-white rounded-lg max-w-96">
+                            <div className="flex justify-between m-4 p-4 bg-white rounded-lg max-w-96">
                               <div className="">
                                 {todo.categories.map((category) => {
                                   return (
                                     <Tag
+                                      className="mr-1 mb-1"
                                       key={category.id}
                                       colorScheme={category.color}
                                     >
@@ -242,14 +216,102 @@ export default function TodoCategoryListPage() {
                                     </Tag>
                                   );
                                 })}
-                                <Text>{todo.title}</Text>
-                                <div>{formattedDate(todo.completionDate)}</div>
+                                <Text fontSize="xl">{todo.title}</Text>
+                                <Text
+                                  className="text-border-gray"
+                                  fontSize="sm"
+                                >
+                                  {formattedDate(todo.completionDate)}
+                                </Text>
                               </div>
                               <div>
                                 <IconButton
                                   variant="unstyled"
                                   className="!min-w-0 !min-h-0"
                                   aria-label="Search database"
+                                  fontSize="20"
+                                  icon={<DeleteIcon />}
+                                  onClick={() => {
+                                    console.log(todo.id);
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </Draggable>
+                    );
+                  })}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </DragDropContext>
+        </div>
+        <div className="bg-gray-100 w-96">
+          <div className="h-4 bg-done-color rounded-t-xl"></div>
+          <div className="flex justify-between mx-4">
+            <Text fontSize="2xl" className="font-bold mb-2">
+              Done
+            </Text>
+            <IconButton
+              variant="unstyled"
+              className="!min-w-0 !min-h-0"
+              aria-label="Search database"
+              fontSize="24"
+              icon={<MdAddCircle />}
+              onClick={() => onOpenTodoForm()}
+            />
+          </div>
+          <DragDropContext onDragEnd={onDragEndTest}>
+            <Droppable droppableId="droppableId">
+              {(provided) => (
+                <div
+                  className="doneList"
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                >
+                  {doneList.map((todo, index) => {
+                    return (
+                      <Draggable
+                        key={todo.id}
+                        draggableId={String(todo.id)}
+                        index={index}
+                      >
+                        {(provided) => (
+                          <div
+                            className=""
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                          >
+                            <div className="flex justify-between m-4 p-4 bg-white rounded-lg max-w-96">
+                              <div className="">
+                                {todo.categories.map((category) => {
+                                  return (
+                                    <Tag
+                                      className="mr-1 mb-1"
+                                      key={category.id}
+                                      colorScheme={category.color}
+                                    >
+                                      {category.name}
+                                    </Tag>
+                                  );
+                                })}
+                                <Text fontSize="xl">{todo.title}</Text>
+                                <Text
+                                  className="text-border-gray"
+                                  fontSize="sm"
+                                >
+                                  {formattedDate(todo.completionDate)}
+                                </Text>
+                              </div>
+                              <div>
+                                <IconButton
+                                  variant="unstyled"
+                                  className="!min-w-0 !min-h-0"
+                                  aria-label="Search database"
+                                  fontSize="20"
                                   icon={<DeleteIcon />}
                                   onClick={() => {
                                     console.log(todo.id);
@@ -269,6 +331,12 @@ export default function TodoCategoryListPage() {
           </DragDropContext>
         </div>
       </div>
+      <TodoFormModal
+        isOpen={isOpenTodoForm}
+        todoForm={undefined}
+        onClose={onCloseTodoForm}
+        onSaveOrUpdateTodo={onSaveOrUpdateTodo}
+      />
     </>
   );
 }
