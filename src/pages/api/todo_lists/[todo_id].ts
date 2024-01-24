@@ -16,7 +16,7 @@ export default async function handler(
   } else if (req.method === "PUT") {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     const params = JSON.parse(req.body);
-    const { title, description, completionDate, status } = params;
+    const { title, description, completionDate, status, categoryIds } = params;
     const newTodo = await db.todo.update({
       where: {
         id: Number(req.query.todo_id),
@@ -26,6 +26,12 @@ export default async function handler(
         description,
         completionDate,
         status,
+        categories: {
+          connect: categoryIds.map((id: number) => ({ id })),
+        },
+      },
+      include: {
+        categories: true,
       },
     });
     res.status(200).json(newTodo);

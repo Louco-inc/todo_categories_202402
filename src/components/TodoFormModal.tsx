@@ -41,15 +41,18 @@ type PropsType = {
 
 export default function TodoFormModal(props: PropsType) {
   const { todoForm, isOpen, onClose, onSaveOrUpdateTodo } = props;
-  const [todoFormValue, setTodoFormValue] = useState<TodoFormType>(
-    todoForm ?? defaultFormValue
-  );
+  const [todoFormValue, setTodoFormValue] =
+    useState<TodoFormType>(defaultFormValue);
   const [categories, setCategories] = useState<CategoryType[]>([]);
   const createdToast = useToast();
 
   useEffect(() => {
     fetchCategories();
   }, []);
+
+  useEffect(() => {
+    todoForm && setTodoFormValue(todoForm);
+  }, [todoForm]);
 
   const fetchCategories = async () => {
     const res = await fetch("/api/categories").then((r) => r.json());

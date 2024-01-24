@@ -24,7 +24,6 @@ export default async function handler(
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     const params = JSON.parse(req.body);
     const { title, description, completionDate, status, categoryIds } = params;
-    console.log({ title, description, completionDate, status, categoryIds });
     const newTodo = await db.todo.create({
       data: {
         title,
