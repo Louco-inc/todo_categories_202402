@@ -1,6 +1,6 @@
 import Header from "components/header";
 import { useEffect, useState } from "react";
-import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
+import { DragDropContext, Draggable, DropResult, Droppable } from "react-beautiful-dnd";
 import {
   Text,
   IconButton,
@@ -62,7 +62,8 @@ export default function TodoCategoryListPage() {
     });
   };
 
-  const onDragEndTest = (result) => {
+  const onDragEndTest = (result: DropResult) => {
+    if (!result.destination) return
     const items = [...todoList];
     const deleteItem = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, deleteItem[0]);

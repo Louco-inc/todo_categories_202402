@@ -1,13 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { db } from "lib/prisma";
-import { TodoStatusType } from "types";
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ): Promise<void> {
   if (req.method === "GET") {
-    const status = req.query.status;
+    const queryStatus = req.query.status;
+    const status = Array.isArray(queryStatus) ? queryStatus[0] : queryStatus;
     const todoLists = await db.todo.findMany({
       include: {
         categories: true,
