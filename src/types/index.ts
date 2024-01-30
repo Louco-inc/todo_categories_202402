@@ -7,7 +7,7 @@ export type CategoryType = {
   todoLists: TodoType[];
 };
 
-export type TodoStatusType = "todo" | "inProgress" | "done";
+export type TodoStatusType = "todo" | "inprogress" | "done";
 
 export type TodoFormType = {
   id?: number;
@@ -23,4 +23,5 @@ export type TodoType = Omit<TodoFormType, "categoryIds"> & {
   categories: CategoryType[];
   createdAt?: string;
   updatedAt: string;
+  slug?: string;
 };

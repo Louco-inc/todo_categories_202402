@@ -36,7 +36,7 @@ export default function TodoDetailModal(props: PropsType) {
     switch (status) {
       case "todo":
         return <Badge className="uppercase">{status}</Badge>;
-      case "inProgress":
+      case "inprogress":
         return (
           <Badge colorScheme="purple" className="uppercase">
             {status}

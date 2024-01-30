@@ -140,7 +140,7 @@ export default function TodoFormModal(props: PropsType) {
                 }
               >
                 <option value="todo">todo</option>
-                <option value="inProgress">inprogress</option>
+                <option value="inprogress">inprogress</option>
                 <option value="done">done</option>
               </Select>
             </FormControl>

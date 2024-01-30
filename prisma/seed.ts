@@ -99,7 +99,7 @@ async function main() {
     })
   );
 
-  console.log("inProgressリストのインサート");
+  console.log("inprogressリストのインサート");
   await Promise.all(
     [
       {
@@ -154,7 +154,7 @@ async function main() {
           title: task.title,
           description: task.description,
           completionDate: new Date(),
-          status: "inProgress",
+          status: "inprogress",
           categories: {
             connect: [{ id: task.category }],
           },
