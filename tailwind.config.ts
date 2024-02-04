@@ -20,6 +20,7 @@ const config: Config = {
         "todo-color": "#6598FC",
         "inprogress-color": "#FFB546",
         "done-color": "#757575",
+        "dashboard-color": "#F7F8FA",
       },
     },
   },

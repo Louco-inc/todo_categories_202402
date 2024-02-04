@@ -340,7 +340,7 @@ export default function TodoCategoryListPage(): JSX.Element {
             const slug = { 0: "todo", 1: "inprogress", 2: "done" }[i] ?? "todo";
             const componentProps = drabbleComponentProps[slug];
             return (
-              <div key={slug}>
+              <div key={slug} className="bg-dashboard-color w-80">
                 <div
                   className={`h-4 rounded-t-xl ${componentProps.headerColor}`}
                 ></div>
