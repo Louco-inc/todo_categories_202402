@@ -15,7 +15,7 @@ import {
 } from "@chakra-ui/react";
 import { DeleteIcon } from "@chakra-ui/icons";
 import { MdAddCircle } from "react-icons/md";
-import { TodoFormType, TodoStatusType, TodoType } from "types";
+import { TodoFormType, TodoType } from "types";
 import { formattedDate } from "utils";
 import TodoFormModal from "components/TodoFormModal";
 import TodoDetailModal from "components/TodoDetailModal";
@@ -31,12 +31,13 @@ const defaultTodoValue: TodoType = {
   updatedAt: "",
 };
 
-type DrabbleComponentProps = {
-  [key: string]: {
+type DrabbleComponentProps = Record<
+  string,
+  {
     headerColor: string;
     headerText: string;
-  };
-};
+  }
+>;
 
 const drabbleComponentProps: DrabbleComponentProps = {
   todo: {
@@ -53,13 +54,13 @@ const drabbleComponentProps: DrabbleComponentProps = {
   },
 };
 
-const TODO_LIST_INDEX: { [key: string]: number } = {
+const TODO_LIST_INDEX: Record<string, number> = {
   todo: 0,
   inprogress: 1,
   done: 2,
 };
 
-export default function TodoCategoryListPage() {
+export default function TodoCategoryListPage(): JSX.Element {
   const [todoLists, setTodoLists] = useState<TodoType[][]>([]);
   const [editingTodoForm, setEditingTodoForm] = useState<
     TodoFormType | undefined
@@ -81,10 +82,11 @@ export default function TodoCategoryListPage() {
     init();
   }, []);
 
-  const init = async () => {
+  const init = async (): Promise<void> => {
     await Promise.all(
-      ["todo", "inprogress", "done"].map((status) => {
-        return fetch(`/api/todo_lists?status=${status}`).then((r) => r.json());
+      ["todo", "inprogress", "done"].map(async (status) => {
+        const r = await fetch(`/api/todo_lists?status=${status}`);
+        return await r.json();
       })
     ).then(([resTodoList, resInProgressList, resDoneList]) => {
       const todoList = resTodoList.map((todo: TodoType, i: number) => ({
@@ -105,7 +107,7 @@ export default function TodoCategoryListPage() {
     });
   };
 
-  const onDragEndTest = (result: DropResult) => {
+  const onDragEndTest = (result: DropResult): void => {
     if (!result.destination) return;
 
     const { source, destination, draggableId } = result;
@@ -162,7 +164,9 @@ export default function TodoCategoryListPage() {
     }
   };
 
-  const onSaveOrUpdateTodo = async (todoFormValue: TodoFormType) => {
+  const onSaveOrUpdateTodo = async (
+    todoFormValue: TodoFormType
+  ): Promise<void> => {
     const params = {
       ...todoFormValue,
       completionDate: new Date(todoFormValue.completionDate),
@@ -172,10 +176,10 @@ export default function TodoCategoryListPage() {
       const res = await fetch("/api/todo_lists", {
         method: "POST",
         body: JSON.stringify(params),
-      }).then((r) => r.json());
+      }).then(async (r) => await r.json());
       setTodoLists((prev) => {
         const todoListId = TODO_LIST_INDEX[res.status];
-        const targetTodo = {
+        const targetTodo: TodoType = {
           ...res,
           slug: `${res.status}-${res.id}`,
         };
@@ -271,12 +275,12 @@ export default function TodoCategoryListPage() {
     }
   };
 
-  const openTodoDetail = (todo: TodoType) => {
+  const openTodoDetail = (todo: TodoType): void => {
     setShowingTodo(todo);
     onOpenDetailModal();
   };
 
-  const onEditTodo = (todo: TodoType) => {
+  const onEditTodo = (todo: TodoType): void => {
     onCloseDetailModal();
     const formValue: TodoFormType = {
       id: todo.id,
@@ -290,7 +294,7 @@ export default function TodoCategoryListPage() {
     onOpenTodoForm();
   };
 
-  const onDeleteTodo = async (todo: TodoType) => {
+  const onDeleteTodo = async (todo: TodoType): Promise<void> => {
     if (!todo.id) return;
     await fetch(`/api/todo_lists/${todo.id}`, {
       method: "DELETE",

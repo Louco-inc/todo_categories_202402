@@ -7,8 +7,6 @@ import {
   ModalBody,
   ModalFooter,
   Button,
-  useDisclosure,
-  Box,
   FormControl,
   FormLabel,
   Badge,
@@ -39,7 +37,7 @@ type PropsType = {
   onSaveOrUpdateTodo: (todoFormValue: TodoFormType) => void;
 };
 
-export default function TodoFormModal(props: PropsType) {
+export default function TodoFormModal(props: PropsType): JSX.Element {
   const { todoForm, isOpen, onClose, onSaveOrUpdateTodo } = props;
   const [todoFormValue, setTodoFormValue] =
     useState<TodoFormType>(defaultFormValue);
@@ -54,12 +52,14 @@ export default function TodoFormModal(props: PropsType) {
     todoForm && setTodoFormValue(todoForm);
   }, [todoForm]);
 
-  const fetchCategories = async () => {
-    const res = await fetch("/api/categories").then((r) => r.json());
+  const fetchCategories = async (): Promise<void> => {
+    const res: CategoryType[] = await fetch("/api/categories").then(
+      async (r) => await r.json()
+    );
     setCategories(res);
   };
 
-  const updateCategories = (categoryId: number) => {
+  const updateCategories = (categoryId: number): void => {
     if (todoFormValue.categoryIds.includes(categoryId)) {
       setTodoFormValue((prev) => ({
         ...prev,
@@ -73,7 +73,7 @@ export default function TodoFormModal(props: PropsType) {
     }
   };
 
-  const confirmTodoForm = () => {
+  const confirmTodoForm = (): void => {
     if (!todoFormValue.title) {
       createdToast({
         title: "タイトルが入力されていません",
@@ -88,7 +88,7 @@ export default function TodoFormModal(props: PropsType) {
     closeModal();
   };
 
-  const closeModal = () => {
+  const closeModal = (): void => {
     setTodoFormValue(defaultFormValue);
     onClose();
   };

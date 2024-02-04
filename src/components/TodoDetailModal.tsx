@@ -29,7 +29,7 @@ type PropsType = {
   onDelete: (todoDetail: TodoType) => void;
 };
 
-export default function TodoDetailModal(props: PropsType) {
+export default function TodoDetailModal(props: PropsType): JSX.Element {
   const { todoDetail, isOpen, onClose, onEdit, onDelete } = props;
 
   const convertedStatusBadge = (status: string): JSX.Element => {
