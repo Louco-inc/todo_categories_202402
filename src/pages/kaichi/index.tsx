@@ -60,8 +60,7 @@ export default function TodoCategoryListPage(): JSX.Element {
                     </div>
                   )}
                 </Draggable>
-              ));
-}
+              ))}
             {provided.placeholder}
           </div>
         )}
