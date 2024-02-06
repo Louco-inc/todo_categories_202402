@@ -40,17 +40,16 @@ export default function TodoCategoryListPage(): JSX.Element {
     <DragDropContext
       onDragEnd={onDragEnd}
     >
-      <Droppable droppableId="droppable-1" type="PERSON">
-        {(provided, snapshot) => (
+      <Droppable key={0} droppableId="todo1">
+        {(provided) => (
           <div
             ref={provided.innerRef}
-            style={{ backgroundColor: snapshot.isDraggingOver ? 'blue' : 'grey' }}
             {...provided.droppableProps}
           >
             {
               todoList.map((item, index) => (
-                <Draggable draggableId={item.id} index={index}>
-                  {(provided, snapshot) => (
+                <Draggable key={item.id} draggableId={`${item.id}`} index={index}>
+                  {(provided) => (
                     <div
                       ref={provided.innerRef}
                       {...provided.draggableProps}
