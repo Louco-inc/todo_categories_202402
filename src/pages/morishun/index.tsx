@@ -89,7 +89,7 @@ export default function TodoCategoryListPage(): JSX.Element {
               icon={<IoIosAddCircle />}
             />
           </div>
-          <Droppable key={0} droppableId="todo">
+          <Droppable key={0} droppableId="todo2">
             {(provided) => (
               <div {...provided.droppableProps} ref={provided.innerRef}>
                 {todoLists.map((todo, index) => {
