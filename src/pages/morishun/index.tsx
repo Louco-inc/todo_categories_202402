@@ -1,7 +1,16 @@
 import Header from "components/header";
 import { useEffect, useState } from "react";
 import { TodoType } from "types";
-import { Card, CardBody, IconButton, Text } from "@chakra-ui/react";
+import {
+  Card,
+  CardBody,
+  HStack,
+  IconButton,
+  Tag,
+  TagLabel,
+  Text,
+} from "@chakra-ui/react";
+import { DeleteIcon } from "@chakra-ui/icons";
 import { IoIosAddCircle } from "react-icons/io";
 
 import {
@@ -11,37 +20,16 @@ import {
   DropResult,
 } from "react-beautiful-dnd";
 
-const defaultTodoValue: TodoType = {
-  id: -100,
-  title: "",
-  description: "",
-  completionDate: "",
-  status: "todo",
-  categories: [],
-  createdAt: "",
-  updatedAt: "",
-};
-
-const getTodoLists = (): TodoType[] => {
-  const todo1 = {
-    ...defaultTodoValue,
-    id: 1,
-    title: "タスク１",
-  };
-  const todo2 = {
-    ...defaultTodoValue,
-    id: 2,
-    title: "タスク２",
-  };
-  const todo3 = {
-    ...defaultTodoValue,
-    id: 3,
-    title: "タスク３",
-  };
-  const todoListTmp: TodoType[] = [todo1, todo2, todo3];
-
-  return todoListTmp;
-};
+// const defaultTodoValue: TodoType = {
+//   id: -100,
+//   title: "",
+//   description: "",
+//   completionDate: "",
+//   status: "todo",
+//   categories: [],
+//   createdAt: "",
+//   updatedAt: "",
+// };
 
 const reorder = (
   todoList: TodoType[],
@@ -55,12 +43,29 @@ const reorder = (
   return result;
 };
 
+// 日付を「yyyy-mm-dd」にフォーマット
+// 参考：https://ribbit.konomi.app/blog/javascript-date-format/
+const getFormattedDate = (date: Date): string => {
+  return date.toISOString().split("T")[0];
+};
+
 export default function TodoCategoryListPage(): JSX.Element {
   const [todoLists, setTodoLists] = useState<TodoType[]>([]);
 
   useEffect(() => {
-    setTodoLists(getTodoLists());
+    const init = async (): Promise<void> => {
+      await fetchTodoList();
+    };
+    init();
   }, []);
+
+  const fetchTodoList = async (): Promise<void> => {
+    const lists: TodoType[] = await fetch("/api/todo_lists").then(
+      async (r) => await r.json()
+    );
+    console.log(lists);
+    setTodoLists(lists);
+  };
 
   const onDragEnd = (result: DropResult): void => {
     if (!result.destination) {
@@ -81,45 +86,85 @@ export default function TodoCategoryListPage(): JSX.Element {
       <Header />
       <div className="flex justify-around m-8"></div>
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="bg-dashboard-color w-80">
-          <div className="flex justify-between">
-            <Text>Todo</Text>
-            <IconButton
-              aria-label="Search database"
-              icon={<IoIosAddCircle />}
-            />
-          </div>
-          <Droppable key={0} droppableId="todo2">
-            {(provided) => (
-              <div {...provided.droppableProps} ref={provided.innerRef}>
-                {todoLists.map((todo, index) => {
-                  return (
-                    <Draggable
-                      key={todo.id}
-                      draggableId={`todo-${todo.id}`}
-                      index={index}
-                    >
-                      {(provided) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                        >
-                          <Card className="bg-white m-4 p-4">
-                            <CardBody>
-                              <Text>{todo.title}</Text>
-                            </CardBody>
-                          </Card>
-                        </div>
-                      )}
-                    </Draggable>
-                  );
-                })}
-                {provided.placeholder}
+        <HStack className="flex justify-between content-center">
+          {["todo", "inprogress", "done"].map((slug) => {
+            return (
+              <div key={slug} className="bg-dashboard-color w-80">
+                <div className="flex justify-between">
+                  <Text className="font-bold capitalize">{slug}</Text>
+                  <IconButton
+                    variant="unstyled"
+                    aria-label="Search database"
+                    icon={<IoIosAddCircle />}
+                  />
+                </div>
+                <Droppable droppableId={slug}>
+                  {(provided) => (
+                    <div {...provided.droppableProps} ref={provided.innerRef}>
+                      {todoLists
+                        .filter((todo) => todo.status === slug)
+                        .map((todo, index) => {
+                          return (
+                            <Draggable
+                              key={todo.id}
+                              draggableId={`${slug}-${todo.id}`}
+                              index={index}
+                            >
+                              {(provided) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                >
+                                  <Card className="bg-white m-4 p-4">
+                                    <CardBody>
+                                      <HStack className="flex justify-between">
+                                        <div>
+                                          <Text>{todo.status}</Text>
+                                          {todo.categories.map((category) => {
+                                            return (
+                                              <Tag
+                                                size="sm"
+                                                key={category.id}
+                                                colorScheme={category.color}
+                                              >
+                                                <TagLabel>
+                                                  {category.name}
+                                                </TagLabel>
+                                              </Tag>
+                                            );
+                                          })}
+                                          <Text className="font-bold">
+                                            {todo.title}
+                                          </Text>
+                                          <Text>
+                                            {getFormattedDate(
+                                              new Date(todo.completionDate)
+                                            )}
+                                          </Text>
+                                        </div>
+                                        <IconButton
+                                          variant="unstyled"
+                                          aria-label="Search database"
+                                          icon={<DeleteIcon />}
+                                          onClick={() => {}}
+                                        />
+                                      </HStack>
+                                    </CardBody>
+                                  </Card>
+                                </div>
+                              )}
+                            </Draggable>
+                          );
+                        })}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
               </div>
-            )}
-          </Droppable>
-        </div>
+            );
+          })}
+        </HStack>
       </DragDropContext>
     </>
   );
