@@ -1,6 +1,6 @@
 import Header from "components/header";
 import { useEffect, useState } from "react";
-import { TodoType } from "types";
+import { TodoType, TodoStatusType } from "types";
 import {
   Card,
   CardBody,
@@ -95,44 +95,90 @@ export default function TodoCategoryListPage(): JSX.Element {
       return;
     }
 
-    // TodoListsの配列の中身の順番を入れ替える
-    // ドラッグ対象のTodoのstatusのもののみ取り出す
-    // todo:todoLists[0]を入れ替える
-    // inprogress:todoLists[1]を入れ替える
-    // done:todoLists[2]を入れ替える
-    let targetList;
-    switch (result.destination?.droppableId) {
-      case "todo":
-        targetList = todoLists[0];
-        break;
-      case "inprogress":
-        targetList = todoLists[1];
-        break;
-      case "done":
-        targetList = todoLists[2];
-        break;
-    }
-    if (targetList === undefined) return;
-    const newTargetList = reorder(
-      targetList,
-      result.source.index,
-      result.destination.index
-    );
-    let todoListTmp: TodoType[][] = [];
-    switch (result.destination?.droppableId) {
-      case "todo":
-        todoListTmp = [newTargetList, todoLists[1], todoLists[2]];
-        break;
-      case "inprogress":
-        todoListTmp = [todoLists[0], newTargetList, todoLists[2]];
-        break;
+		const { source, destination } = result;
+    if (source.droppableId === destination.droppableId) {
+      // 同じ列内でD&D
+      // TodoListsの配列の中身の順番を入れ替える
+      // ドラッグ対象のTodoのstatusのもののみ取り出す
+      // todo:todoLists[0]を入れ替える
+      // inprogress:todoLists[1]を入れ替える
+      // done:todoLists[2]を入れ替える
+      let targetList;
+      switch (destination?.droppableId) {
+        case "todo":
+          targetList = todoLists[0];
+          break;
+        case "inprogress":
+          targetList = todoLists[1];
+          break;
+        case "done":
+          targetList = todoLists[2];
+          break;
+      }
+      if (targetList === undefined) return;
+      const newTargetList = reorder(
+        targetList,
+        source.index,
+        destination.index
+      );
+      let todoListTmp: TodoType[][] = [];
+      switch (destination?.droppableId) {
+        case "todo":
+          todoListTmp = [newTargetList, todoLists[1], todoLists[2]];
+          break;
+        case "inprogress":
+          todoListTmp = [todoLists[0], newTargetList, todoLists[2]];
+          break;
+        case "done":
+          todoListTmp = [todoLists[0], todoLists[1], newTargetList];
+          break;
+      }
 
-      case "done":
-        todoListTmp = [todoLists[0], todoLists[1], newTargetList];
-        break;
-    }
+      setTodoLists(todoListTmp);
+    } else {
+      // 別の列にD&D
+      // TodoListsの配列の中身の順番を入れ替える
+      // ドラッグ元のstatusとドラッグ先のstatusのものを取り出す
+      // ドラッグ元のstatusのもの：ドラッグするTodoを配列から削除
+      // ドラッグ先のstatusのもの：ドラッグするTodoを配列に追加
+      const newTodoLists = [...todoLists];
+      const draggedTargetSlug: string = source.droppableId;
+      const droppedTargetSlug: string = destination.droppableId;
 
-    setTodoLists(todoListTmp);
+      // ドラッグ元のstatusのListからドラッグするTodoを削除
+      let targetTodo!: TodoType;
+      switch (draggedTargetSlug) {
+        case "todo":
+          targetTodo = newTodoLists[0][source.index];
+          newTodoLists[0].splice(source.index, 1);
+          break;
+        case "inprogress":
+          targetTodo = newTodoLists[1][source.index];
+          newTodoLists[1].splice(source.index, 1);
+          break;
+        case "done":
+          targetTodo = newTodoLists[2][source.index];
+          newTodoLists[2].splice(source.index, 1);
+          break;
+      }
+      // ドラッグ対象のstatusを更新
+      targetTodo.status = droppedTargetSlug as TodoStatusType;
+
+      // ドラッグ先のstatusのListにドロップするTodoを追加
+      switch (droppedTargetSlug) {
+        case "todo":
+          newTodoLists[0].splice(destination.index, 0, targetTodo);
+          break;
+        case "inprogress":
+          newTodoLists[1].splice(destination.index, 0, targetTodo);
+          break;
+        case "done":
+          newTodoLists[2].splice(destination.index, 0, targetTodo);
+          break;
+      }
+
+      setTodoLists(newTodoLists);
+    }
   };
 
   return (
@@ -159,7 +205,7 @@ export default function TodoCategoryListPage(): JSX.Element {
                         return (
                           <Draggable
                             key={todo.id}
-                            draggableId={`${slug}-${todo.id}`}
+                            draggableId={`todo-${todo.id}`}
                             index={index}
                           >
                             {(provided) => (
