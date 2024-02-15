@@ -1,6 +1,6 @@
 import Header from "components/header";
 import { useEffect, useState } from "react";
-import { TodoType, TodoStatusType } from "types";
+import { TodoType, TodoStatusType, TodoFormType } from "types";
 import {
   Card,
   CardBody,
@@ -9,6 +9,8 @@ import {
   Tag,
   TagLabel,
   Text,
+  useDisclosure,
+  useToast,
 } from "@chakra-ui/react";
 import { DeleteIcon } from "@chakra-ui/icons";
 import { IoIosAddCircle } from "react-icons/io";
@@ -19,6 +21,8 @@ import {
   Draggable,
   DropResult,
 } from "react-beautiful-dnd";
+
+import TodoFormModal from "components/TodoFormModal";
 
 // const defaultTodoValue: TodoType = {
 //   id: -100,
@@ -54,8 +58,23 @@ const getFormattedDate = (date: Date): string => {
   return "yyyy-mm-dd"; // 仮置き
 };
 
+const TODO_LIST_INDEX: Record<string, number> = {
+  todo: 0,
+  inprogress: 1,
+  done: 2,
+};
+
 export default function TodoCategoryListPage(): JSX.Element {
   const [todoLists, setTodoLists] = useState<TodoType[][]>([[], [], []]);
+  const [editingTodoForm, setEditingTodoForm] = useState<
+    TodoFormType | undefined
+  >(undefined);
+  const {
+    isOpen: isOpenTodoForm,
+    onOpen: onOpenTodoForm,
+    onClose: onCloseTodoForm,
+  } = useDisclosure();
+  const createdToast = useToast();
 
   useEffect(() => {
     const init = async (): Promise<void> => {
@@ -95,7 +114,7 @@ export default function TodoCategoryListPage(): JSX.Element {
       return;
     }
 
-		const { source, destination } = result;
+    const { source, destination } = result;
     if (source.droppableId === destination.droppableId) {
       // 同じ列内でD&D
       // TodoListsの配列の中身の順番を入れ替える
@@ -103,18 +122,8 @@ export default function TodoCategoryListPage(): JSX.Element {
       // todo:todoLists[0]を入れ替える
       // inprogress:todoLists[1]を入れ替える
       // done:todoLists[2]を入れ替える
-      let targetList;
-      switch (destination?.droppableId) {
-        case "todo":
-          targetList = todoLists[0];
-          break;
-        case "inprogress":
-          targetList = todoLists[1];
-          break;
-        case "done":
-          targetList = todoLists[2];
-          break;
-      }
+      const targetTodoListId = TODO_LIST_INDEX[destination?.droppableId];
+      const targetList = todoLists[targetTodoListId];
       if (targetList === undefined) return;
       const newTargetList = reorder(
         targetList,
@@ -146,38 +155,60 @@ export default function TodoCategoryListPage(): JSX.Element {
       const droppedTargetSlug: string = destination.droppableId;
 
       // ドラッグ元のstatusのListからドラッグするTodoを削除
-      let targetTodo!: TodoType;
-      switch (draggedTargetSlug) {
-        case "todo":
-          targetTodo = newTodoLists[0][source.index];
-          newTodoLists[0].splice(source.index, 1);
-          break;
-        case "inprogress":
-          targetTodo = newTodoLists[1][source.index];
-          newTodoLists[1].splice(source.index, 1);
-          break;
-        case "done":
-          targetTodo = newTodoLists[2][source.index];
-          newTodoLists[2].splice(source.index, 1);
-          break;
-      }
+      const draggedTodoListId = TODO_LIST_INDEX[draggedTargetSlug];
+      const targetTodo: TodoType =
+        newTodoLists[draggedTodoListId][source.index];
+      newTodoLists[draggedTodoListId].splice(source.index, 1);
+
       // ドラッグ対象のstatusを更新
       targetTodo.status = droppedTargetSlug as TodoStatusType;
 
       // ドラッグ先のstatusのListにドロップするTodoを追加
-      switch (droppedTargetSlug) {
-        case "todo":
-          newTodoLists[0].splice(destination.index, 0, targetTodo);
-          break;
-        case "inprogress":
-          newTodoLists[1].splice(destination.index, 0, targetTodo);
-          break;
-        case "done":
-          newTodoLists[2].splice(destination.index, 0, targetTodo);
-          break;
-      }
+      const droppedTodoListId = TODO_LIST_INDEX[droppedTargetSlug];
+      newTodoLists[droppedTodoListId].splice(destination.index, 0, targetTodo);
 
       setTodoLists(newTodoLists);
+    }
+  };
+
+  // Todo登録モーダルで「登録」ボタンを押下したときに動く処理
+  const onSaveOrUpdateTodo = async (
+    todoFormValue: TodoFormType
+  ): Promise<void> => {
+    const params = {
+      ...todoFormValue,
+      completionDate: new Date(todoFormValue.completionDate),
+    };
+    // 登録の場合
+    // !todoFormValue.id：idがない = DBに存在しない
+    if (!todoFormValue.id) {
+      const res = await fetch("/api/todo_lists", {
+        method: "POST",
+        body: JSON.stringify(params),
+      }).then(async (r) => await r.json());
+      setTodoLists((prev) => {
+        const todoListId = TODO_LIST_INDEX[res.status];
+        const targetTodo: TodoType = {
+          ...res,
+          slug: `${res.status}-${res.id}`,
+        };
+        const newTodoLists = [...prev];
+        newTodoLists[todoListId].splice(0, 0, targetTodo);
+        return newTodoLists;
+      });
+      createdToast({
+        title: "タスクが登録されました。",
+        description: "",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+        position: "bottom-right",
+      });
+    } else {
+      // 更新の場合
+      // TODO:更新の処理を書く
+      // setEditingTodoFormのエラー回避のため一時的に記述
+      setEditingTodoForm(undefined);
     }
   };
 
@@ -196,6 +227,7 @@ export default function TodoCategoryListPage(): JSX.Element {
                     variant="unstyled"
                     aria-label="Search database"
                     icon={<IoIosAddCircle />}
+                    onClick={onOpenTodoForm}
                   />
                 </div>
                 <Droppable droppableId={slug}>
@@ -264,6 +296,12 @@ export default function TodoCategoryListPage(): JSX.Element {
           })}
         </HStack>
       </DragDropContext>
+      <TodoFormModal
+        todoForm={editingTodoForm}
+        isOpen={isOpenTodoForm}
+        onClose={onCloseTodoForm}
+        onSaveOrUpdateTodo={onSaveOrUpdateTodo}
+      />
     </>
   );
 }
