@@ -40,7 +40,7 @@ export default function TodoCategoryListPage(): JSX.Element {
     <DragDropContext
       onDragEnd={onDragEnd}
     >
-      <Droppable key={0} droppableId="todo1">
+      <Droppable key={0} droppableId="todo1123">
         {(provided) => (
           <div
             ref={provided.innerRef}
