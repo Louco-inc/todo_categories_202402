@@ -23,17 +23,18 @@ import {
 } from "react-beautiful-dnd";
 
 import TodoFormModal from "components/TodoFormModal";
+import TodoDetailModal from "components/TodoDetailModal";
 
-// const defaultTodoValue: TodoType = {
-//   id: -100,
-//   title: "",
-//   description: "",
-//   completionDate: "",
-//   status: "todo",
-//   categories: [],
-//   createdAt: "",
-//   updatedAt: "",
-// };
+const defaultTodoValue: TodoType = {
+  id: -100,
+  title: "",
+  description: "",
+  completionDate: "",
+  status: "todo",
+  categories: [],
+  createdAt: "",
+  updatedAt: "",
+};
 
 const reorder = (
   todoList: TodoType[],
@@ -69,10 +70,16 @@ export default function TodoCategoryListPage(): JSX.Element {
   const [editingTodoForm, setEditingTodoForm] = useState<
     TodoFormType | undefined
   >(undefined);
+  const [showingTodo, setShowingTodo] = useState<TodoType>(defaultTodoValue);
   const {
     isOpen: isOpenTodoForm,
     onOpen: onOpenTodoForm,
     onClose: onCloseTodoForm,
+  } = useDisclosure();
+  const {
+    isOpen: isOpenDetailModal,
+    onOpen: onOpenDetailModal,
+    onClose: onCloseDetailModal,
   } = useDisclosure();
   const createdToast = useToast();
 
@@ -206,10 +213,125 @@ export default function TodoCategoryListPage(): JSX.Element {
       });
     } else {
       // 更新の場合
-      // TODO:更新の処理を書く
-      // setEditingTodoFormのエラー回避のため一時的に記述
+      if (!editingTodoForm?.title || !editingTodoForm.status) {
+        return;
+      }
+      await fetch(`/api/todo_lists/${todoFormValue.id}`, {
+        method: "PUT",
+        body: JSON.stringify(params),
+      }).then(async (r) => {
+        const targetTodo: TodoType = await r.json();
+        const targetTodoValue = {
+          ...targetTodo,
+          slug: `${targetTodo.status}-${targetTodo.id}`,
+        };
+        // 変更されたステータスが同じ場合、インデックスはそのままに項目の値のみ更新
+        if (targetTodoValue.status === editingTodoForm.status) {
+          setTodoLists((prev) => {
+            const newTodoLists = [...prev];
+            const targetListIndex = TODO_LIST_INDEX[targetTodoValue.status];
+            const targetList = newTodoLists[targetListIndex];
+            const targetIndex = targetList.findIndex(
+              (todo) => todo.id === targetTodoValue.id
+            );
+            const splicedTargetList = targetList.toSpliced(targetIndex, 1, targetTodoValue);
+            const result = newTodoLists.toSpliced(targetListIndex, 1, splicedTargetList);
+            return result;
+          });
+        } else {
+          // 異なるステータスに変更された場合、変更先のステータスのリストの1番上に表示
+          setTodoLists((prev) => {
+            const newTodoLists = [...prev];
+            const targetListIndex = TODO_LIST_INDEX[targetTodoValue.status];
+            const prevTargetListIndex = TODO_LIST_INDEX[editingTodoForm.status];
+
+            const targetList = newTodoLists[targetListIndex];
+            const prevTargetList = newTodoLists[prevTargetListIndex];
+
+            // 元々あったTodoを削除
+            const filteredPrevTargetList = prevTargetList.filter(
+              (todo) => todo.id !== targetTodoValue.id
+            );
+            const prevResult = newTodoLists.toSpliced(prevTargetListIndex, 1, filteredPrevTargetList);
+
+            // 変更したTodoを変更先のステータスの1番上に追加
+            const splicedTargetList = targetList.toSpliced(0, 0, targetTodoValue);
+            const result = prevResult.toSpliced(targetListIndex, 1, splicedTargetList);
+            return result;
+          });
+        }
+      });
       setEditingTodoForm(undefined);
+			createdToast({
+        title: "タスクが更新されました。",
+        description: "",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+        position: "bottom-right",
+      });
     }
+  };
+
+  // Todoのカードをクリックした時の処理
+  const openTodoDetail = (todo: TodoType): void => {
+    setShowingTodo(todo);
+    onOpenDetailModal();
+  };
+
+  // Todoを編集する時の処理
+  const onEditTodo = (todo: TodoType): void => {
+    onCloseDetailModal();
+    const todoFormValue: TodoFormType = {
+      id: todo.id,
+      title: todo.title,
+      description: todo.description,
+      completionDate: getFormattedDate(new Date(todo.completionDate)),
+      status: todo.status,
+      categoryIds: todo.categories.map((category) => category.id),
+    };
+    setEditingTodoForm(todoFormValue);
+    onOpenTodoForm();
+  };
+
+  // Todoを削除する時の処理
+  const onDeleteTodo = async (todo: TodoType): Promise<void> => {
+    if (!todo.id) return;
+    await fetch(`/api/todo_lists/${todo.id}`, {
+      method: "DELETE",
+    })
+      .then((r) => {
+        if (r.status === 200) {
+          setTodoLists((prev) => {
+            const newTodoLists = [...prev];
+            const todoListIdx = TODO_LIST_INDEX[todo.status];
+            const targetList = newTodoLists[todoListIdx];
+            const filteredList = targetList.filter((t) => t.id !== todo.id);
+            newTodoLists.splice(todoListIdx, 1, filteredList);
+            return newTodoLists;
+          });
+          createdToast({
+            title: "タスクが削除されました。",
+            description: "",
+            status: "success",
+            duration: 3000,
+            isClosable: true,
+            position: "bottom-right",
+          });
+        }
+      })
+      .catch((e) => {
+        console.log(e);
+        createdToast({
+          title: "タスクの削除に失敗しました。",
+          description: "",
+          status: "error",
+          duration: 3000,
+          isClosable: true,
+          position: "bottom-right",
+        });
+      })
+      .finally(() => onCloseDetailModal());
   };
 
   return (
@@ -246,7 +368,10 @@ export default function TodoCategoryListPage(): JSX.Element {
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
                               >
-                                <Card className="bg-white m-4 p-4">
+                                <Card
+                                  className="bg-white m-4 p-4"
+                                  onClick={() => openTodoDetail(todo)}
+                                >
                                   <CardBody>
                                     <HStack className="flex justify-between">
                                       <div>
@@ -301,6 +426,13 @@ export default function TodoCategoryListPage(): JSX.Element {
         isOpen={isOpenTodoForm}
         onClose={onCloseTodoForm}
         onSaveOrUpdateTodo={onSaveOrUpdateTodo}
+      />
+      <TodoDetailModal
+        todoDetail={showingTodo}
+        isOpen={isOpenDetailModal}
+        onClose={onCloseDetailModal}
+        onEdit={onEditTodo}
+        onDelete={onDeleteTodo}
       />
     </>
   );
