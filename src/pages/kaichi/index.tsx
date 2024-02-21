@@ -15,20 +15,39 @@ const defaultTodoValue: TodoType = {
 };
 
 export default function TodoCategoryListPage(): JSX.Element {
-  const [todoList, setTodoList] = useState<TodoType[]>([]);
+  const [todoLists, settodoLists] = useState<TodoType[][]>([[], [], []]);
 
   useEffect(() => {
     const init = async (): Promise<void> => {
-      await fetchTodoList();
+      await fetchtodoLists();
     };
     init();
   }, []);
 
-  const fetchTodoList = async (): Promise<void> => {
+  const fetchtodoLists = async (): Promise<void> => {
     const lists: TodoType[] = await fetch("/api/todo_lists").then(
       async (r) => await r.json()
     );
-    setTodoList(lists);
+    const todoLists = lists
+    .filter((todo: TodoType) => todo.status === "todo")
+    .map((todo: TodoType) => ({
+      ...todo,
+      slug: `todo-${todo.id}`,
+    }));
+  const inprogressList = lists
+    .filter((todo: TodoType) => todo.status === "inprogress")
+    .map((todo: TodoType) => ({
+      ...todo,
+      slug: `inprogress-${todo.id}`,
+    }));
+  const doneList = lists
+    .filter((todo: TodoType) => todo.status === "done")
+    .map((todo: TodoType) => ({
+      ...todo,
+      slug: `done-${todo.id}`,
+    }));
+
+  settodoLists([todoLists, inprogressList, doneList]);
   };
 
   const onDragEnd = useCallback(() => {
@@ -37,9 +56,7 @@ export default function TodoCategoryListPage(): JSX.Element {
 
   return (<>
     <Header />
-    <DragDropContext
-      onDragEnd={onDragEnd}
-    >
+    <DragDropContext onDragEnd={onDragEnd}>
       <Droppable key={0} droppableId="todo1123">
         {(provided) => (
           <div
@@ -47,7 +64,7 @@ export default function TodoCategoryListPage(): JSX.Element {
             {...provided.droppableProps}
           >
             {
-              todoList.map((item, index) => (
+              todoLists.map((item, index) => (
                 <Draggable key={item.id} draggableId={`${item.id}`} index={index}>
                   {(provided) => (
                     <div
