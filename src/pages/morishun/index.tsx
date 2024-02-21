@@ -1,7 +1,13 @@
 import Header from "components/header";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { TodoType, TodoStatusType, TodoFormType } from "types";
 import {
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogContent,
+  AlertDialogOverlay,
   Card,
   CardBody,
   HStack,
@@ -11,6 +17,7 @@ import {
   Text,
   useDisclosure,
   useToast,
+  Button,
 } from "@chakra-ui/react";
 import { DeleteIcon } from "@chakra-ui/icons";
 import { IoIosAddCircle } from "react-icons/io";
@@ -81,6 +88,15 @@ export default function TodoCategoryListPage(): JSX.Element {
     onOpen: onOpenDetailModal,
     onClose: onCloseDetailModal,
   } = useDisclosure();
+  const {
+    isOpen: isOpenDeleteDialog,
+    onOpen: onOpenDeleteDialog,
+    onClose: onCloseDeleteDialog,
+  } = useDisclosure();
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const [targetTodoTitle, setTargetTodoTitle] = useState<string | undefined>(
+    undefined
+  );
   const createdToast = useToast();
 
   useEffect(() => {
@@ -234,8 +250,16 @@ export default function TodoCategoryListPage(): JSX.Element {
             const targetIndex = targetList.findIndex(
               (todo) => todo.id === targetTodoValue.id
             );
-            const splicedTargetList = targetList.toSpliced(targetIndex, 1, targetTodoValue);
-            const result = newTodoLists.toSpliced(targetListIndex, 1, splicedTargetList);
+            const splicedTargetList = targetList.toSpliced(
+              targetIndex,
+              1,
+              targetTodoValue
+            );
+            const result = newTodoLists.toSpliced(
+              targetListIndex,
+              1,
+              splicedTargetList
+            );
             return result;
           });
         } else {
@@ -252,17 +276,29 @@ export default function TodoCategoryListPage(): JSX.Element {
             const filteredPrevTargetList = prevTargetList.filter(
               (todo) => todo.id !== targetTodoValue.id
             );
-            const prevResult = newTodoLists.toSpliced(prevTargetListIndex, 1, filteredPrevTargetList);
+            const prevResult = newTodoLists.toSpliced(
+              prevTargetListIndex,
+              1,
+              filteredPrevTargetList
+            );
 
             // 変更したTodoを変更先のステータスの1番上に追加
-            const splicedTargetList = targetList.toSpliced(0, 0, targetTodoValue);
-            const result = prevResult.toSpliced(targetListIndex, 1, splicedTargetList);
+            const splicedTargetList = targetList.toSpliced(
+              0,
+              0,
+              targetTodoValue
+            );
+            const result = prevResult.toSpliced(
+              targetListIndex,
+              1,
+              splicedTargetList
+            );
             return result;
           });
         }
       });
       setEditingTodoForm(undefined);
-			createdToast({
+      createdToast({
         title: "タスクが更新されました。",
         description: "",
         status: "success",
@@ -295,6 +331,14 @@ export default function TodoCategoryListPage(): JSX.Element {
   };
 
   // Todoを削除する時の処理
+  /**
+   * ・ゴミ箱アイコンクリック
+   * ・削除対象のTodoのID、titleをstateに保持
+   * ・削除確認モーダルをオープン
+   * ・モーダルの削除ボタンをクリック
+   * ・onDeleteTodoを動かす
+   *
+   */
   const onDeleteTodo = async (todo: TodoType): Promise<void> => {
     if (!todo.id) return;
     await fetch(`/api/todo_lists/${todo.id}`, {
@@ -402,7 +446,12 @@ export default function TodoCategoryListPage(): JSX.Element {
                                         variant="unstyled"
                                         aria-label="Search database"
                                         icon={<DeleteIcon />}
-                                        onClick={() => {}}
+                                        onClick={(event) => {
+																					event.stopPropagation();	// Cardコンポーネントへのクリックイベント伝播を止める
+																					setShowingTodo(todo);
+																					setTargetTodoTitle(todo.title);
+																					onOpenDeleteDialog();
+																				}}
                                       />
                                     </HStack>
                                   </CardBody>
@@ -432,8 +481,50 @@ export default function TodoCategoryListPage(): JSX.Element {
         isOpen={isOpenDetailModal}
         onClose={onCloseDetailModal}
         onEdit={onEditTodo}
-        onDelete={onDeleteTodo}
+        onDelete={(todo: TodoType) => {
+          setTargetTodoTitle(todo.title);
+          onOpenDeleteDialog();
+        }}
       />
+      <AlertDialog
+        isOpen={isOpenDeleteDialog}
+        leastDestructiveRef={cancelRef}
+        onClose={onCloseDeleteDialog}
+        isCentered
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              タスクの削除
+            </AlertDialogHeader>
+
+            <AlertDialogBody>
+              <Text>以下のタスクを削除します。</Text>
+              <Text>削除すると元に戻りません。よろしいですか？</Text>
+              <Text className="mt-5">タスク名：{targetTodoTitle}</Text>
+            </AlertDialogBody>
+
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={onCloseDeleteDialog}>
+                キャンセル
+              </Button>
+              <Button
+                colorScheme="red"
+                onClick={async () => {
+                  if (isOpenDetailModal) {
+                    onCloseDetailModal();
+                  }
+                  await onDeleteTodo(showingTodo);
+                  onCloseDeleteDialog();
+                }}
+                ml={3}
+              >
+                削除
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </>
   );
 }
