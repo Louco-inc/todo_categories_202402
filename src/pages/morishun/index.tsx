@@ -153,20 +153,10 @@ export default function TodoCategoryListPage(): JSX.Element {
         source.index,
         destination.index
       );
-      let todoListTmp: TodoType[][] = [];
-      switch (destination?.droppableId) {
-        case "todo":
-          todoListTmp = [newTargetList, todoLists[1], todoLists[2]];
-          break;
-        case "inprogress":
-          todoListTmp = [todoLists[0], newTargetList, todoLists[2]];
-          break;
-        case "done":
-          todoListTmp = [todoLists[0], todoLists[1], newTargetList];
-          break;
-      }
+			const todoListsTmp: TodoType[][] = [...todoLists];
+			const resultTodoLists: TodoType[][] = todoListsTmp.toSpliced(targetTodoListId, 1, newTargetList);
 
-      setTodoLists(todoListTmp);
+      setTodoLists(resultTodoLists);
     } else {
       // 別の列にD&D
       // TodoListsの配列の中身の順番を入れ替える
@@ -219,6 +209,7 @@ export default function TodoCategoryListPage(): JSX.Element {
         newTodoLists[todoListId].splice(0, 0, targetTodo);
         return newTodoLists;
       });
+			setEditingTodoForm(undefined);
       createdToast({
         title: "タスクが登録されました。",
         description: "",
@@ -378,6 +369,12 @@ export default function TodoCategoryListPage(): JSX.Element {
       .finally(() => onCloseDetailModal());
   };
 
+	// Todo編集モーダルを閉じたときにeditingTodoFormの値を破棄させる
+	const closeTodoFormModal = (): void => {
+		setEditingTodoForm(undefined);
+		onCloseTodoForm();
+	} 
+
   return (
     <>
       <Header />
@@ -473,7 +470,7 @@ export default function TodoCategoryListPage(): JSX.Element {
       <TodoFormModal
         todoForm={editingTodoForm}
         isOpen={isOpenTodoForm}
-        onClose={onCloseTodoForm}
+        onClose={closeTodoFormModal}
         onSaveOrUpdateTodo={onSaveOrUpdateTodo}
       />
       <TodoDetailModal
