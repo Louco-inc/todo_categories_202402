@@ -186,7 +186,7 @@ export default function TodoFormModal(props: PropsType): JSX.Element {
 
           <ModalFooter>
             <Button colorScheme="teal" mr={3} onClick={() => confirmTodoForm()}>
-              登録
+              {!todoForm?.id ? '登録' : '更新'}
             </Button>
             <Button
               colorScheme="gray"
