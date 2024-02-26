@@ -72,6 +72,12 @@ const TODO_LIST_INDEX: Record<string, number> = {
   done: 2,
 };
 
+const dashboardHeaderColor: Record<string, string> = {
+	todo: "bg-todo-color",
+	inprogress: "bg-inprogress-color",
+	done: "bg-done-color",
+};
+
 export default function TodoCategoryListPage(): JSX.Element {
   const [todoLists, setTodoLists] = useState<TodoType[][]>([[], [], []]);
   const [editingTodoForm, setEditingTodoForm] = useState<
@@ -378,18 +384,19 @@ export default function TodoCategoryListPage(): JSX.Element {
   return (
     <>
       <Header />
-      <div className="flex justify-around m-8"></div>
+      <div className="flex justify-around m-2"></div>
       <DragDropContext onDragEnd={onDragEnd}>
-        <HStack className="flex justify-between content-center">
+        <HStack className="flex justify-around items-start mx-8">
           {["todo", "inprogress", "done"].map((slug, index) => {
             return (
-              <div key={slug} className="bg-dashboard-color w-80">
-                <div className="flex justify-between">
-                  <Text className="font-bold capitalize">{slug}</Text>
+              <div key={slug} className="bg-dashboard-color w-1/3 rounded-lg m-2">
+                <div className={`h-4 rounded-t-lg ${dashboardHeaderColor[slug]}`}></div>
+								<div className="flex justify-between items-center justify-items-center m-4">
+                  <Text className="font-bold capitalize text-2xl">{slug}</Text>
                   <IconButton
-                    variant="unstyled"
+										variant="ghost"
                     aria-label="Search database"
-                    icon={<IoIosAddCircle />}
+                    icon={<IoIosAddCircle className="size-3/4"/>}
                     onClick={onOpenTodoForm}
                   />
                 </div>
@@ -416,11 +423,11 @@ export default function TodoCategoryListPage(): JSX.Element {
                                   <CardBody>
                                     <HStack className="flex justify-between">
                                       <div>
-                                        <Text>{todo.status}</Text>
                                         {todo.categories.map((category) => {
                                           return (
                                             <Tag
-                                              size="sm"
+																							className="text-balance"
+																							size="sm"
                                               key={category.id}
                                               colorScheme={category.color}
                                             >
@@ -430,9 +437,9 @@ export default function TodoCategoryListPage(): JSX.Element {
                                             </Tag>
                                           );
                                         })}
-                                        <Text className="font-bold">
-                                          {todo.title}
-                                        </Text>
+																				<Text className="font-bold">
+																					{todo.title}
+																				</Text>
                                         <Text>
                                           {getFormattedDate(
                                             new Date(todo.completionDate)
@@ -442,7 +449,7 @@ export default function TodoCategoryListPage(): JSX.Element {
                                       <IconButton
                                         variant="unstyled"
                                         aria-label="Search database"
-                                        icon={<DeleteIcon />}
+                                        icon={<DeleteIcon className="size-3/4"/>}
                                         onClick={(event) => {
 																					event.stopPropagation();	// Cardコンポーネントへのクリックイベント伝播を止める
 																					setShowingTodo(todo);
