@@ -73,9 +73,9 @@ const TODO_LIST_INDEX: Record<string, number> = {
 };
 
 const dashboardHeaderColor: Record<string, string> = {
-	todo: "bg-todo-color",
-	inprogress: "bg-inprogress-color",
-	done: "bg-done-color",
+  todo: "bg-todo-color",
+  inprogress: "bg-inprogress-color",
+  done: "bg-done-color",
 };
 
 export default function TodoCategoryListPage(): JSX.Element {
@@ -159,8 +159,12 @@ export default function TodoCategoryListPage(): JSX.Element {
         source.index,
         destination.index
       );
-			const todoListsTmp: TodoType[][] = [...todoLists];
-			const resultTodoLists: TodoType[][] = todoListsTmp.toSpliced(targetTodoListId, 1, newTargetList);
+      const todoListsTmp: TodoType[][] = [...todoLists];
+      const resultTodoLists: TodoType[][] = todoListsTmp.toSpliced(
+        targetTodoListId,
+        1,
+        newTargetList
+      );
 
       setTodoLists(resultTodoLists);
     } else {
@@ -215,7 +219,7 @@ export default function TodoCategoryListPage(): JSX.Element {
         newTodoLists[todoListId].splice(0, 0, targetTodo);
         return newTodoLists;
       });
-			setEditingTodoForm(undefined);
+      setEditingTodoForm(undefined);
       createdToast({
         title: "タスクが登録されました。",
         description: "",
@@ -375,11 +379,11 @@ export default function TodoCategoryListPage(): JSX.Element {
       .finally(() => onCloseDetailModal());
   };
 
-	// Todo編集モーダルを閉じたときにeditingTodoFormの値を破棄させる
-	const closeTodoFormModal = (): void => {
-		setEditingTodoForm(undefined);
-		onCloseTodoForm();
-	} 
+  // Todo編集モーダルを閉じたときにeditingTodoFormの値を破棄させる
+  const closeTodoFormModal = (): void => {
+    setEditingTodoForm(undefined);
+    onCloseTodoForm();
+  };
 
   return (
     <>
@@ -389,14 +393,19 @@ export default function TodoCategoryListPage(): JSX.Element {
         <HStack className="flex justify-around items-start mx-8">
           {["todo", "inprogress", "done"].map((slug, index) => {
             return (
-              <div key={slug} className="bg-dashboard-color w-1/3 rounded-lg m-2">
-                <div className={`h-4 rounded-t-lg ${dashboardHeaderColor[slug]}`}></div>
-								<div className="flex justify-between items-center justify-items-center m-4">
+              <div
+                key={slug}
+                className="bg-dashboard-color w-1/3 rounded-lg m-2"
+              >
+                <div
+                  className={`h-4 rounded-t-lg ${dashboardHeaderColor[slug]}`}
+                ></div>
+                <div className="flex justify-between items-center justify-items-center m-4">
                   <Text className="font-bold capitalize text-2xl">{slug}</Text>
                   <IconButton
-										variant="ghost"
+                    variant="ghost"
                     aria-label="Search database"
-                    icon={<IoIosAddCircle className="size-3/4"/>}
+                    icon={<IoIosAddCircle className="size-3/4" />}
                     onClick={onOpenTodoForm}
                   />
                 </div>
@@ -417,17 +426,17 @@ export default function TodoCategoryListPage(): JSX.Element {
                                 {...provided.dragHandleProps}
                               >
                                 <Card
-                                  className="bg-white m-4 p-4"
+                                  className="bg-white m-4 p-2"
                                   onClick={() => openTodoDetail(todo)}
                                 >
                                   <CardBody>
-                                    <HStack className="flex justify-between">
-                                      <div>
+                                    <HStack className="justify-between">
+                                      <div className="w-5/6">
                                         {todo.categories.map((category) => {
                                           return (
                                             <Tag
-																							className="text-balance"
-																							size="sm"
+                                              className="text-balance m-0.5"
+                                              size="sm"
                                               key={category.id}
                                               colorScheme={category.color}
                                             >
@@ -437,10 +446,10 @@ export default function TodoCategoryListPage(): JSX.Element {
                                             </Tag>
                                           );
                                         })}
-																				<Text className="font-bold">
-																					{todo.title}
-																				</Text>
-                                        <Text>
+                                        <Text className="my-1 font-bold w-full truncate">
+                                          {todo.title}
+                                        </Text>
+                                        <Text className="text-zinc-400">
                                           {getFormattedDate(
                                             new Date(todo.completionDate)
                                           )}
@@ -449,13 +458,15 @@ export default function TodoCategoryListPage(): JSX.Element {
                                       <IconButton
                                         variant="unstyled"
                                         aria-label="Search database"
-                                        icon={<DeleteIcon className="size-3/4"/>}
+                                        icon={
+                                          <DeleteIcon className="size-3/4" />
+                                        }
                                         onClick={(event) => {
-																					event.stopPropagation();	// Cardコンポーネントへのクリックイベント伝播を止める
-																					setShowingTodo(todo);
-																					setTargetTodoTitle(todo.title);
-																					onOpenDeleteDialog();
-																				}}
+                                          event.stopPropagation(); // Cardコンポーネントへのクリックイベント伝播を止める
+                                          setShowingTodo(todo);
+                                          setTargetTodoTitle(todo.title);
+                                          onOpenDeleteDialog();
+                                        }}
                                       />
                                     </HStack>
                                   </CardBody>

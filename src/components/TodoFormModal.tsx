@@ -84,6 +84,16 @@ export default function TodoFormModal(props: PropsType): JSX.Element {
       });
       return;
     }
+    if (!todoFormValue.categoryIds.length) {
+      createdToast({
+        title: "カテゴリが選択されていません",
+        description: "",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
     onSaveOrUpdateTodo(todoFormValue);
     closeModal();
   };
@@ -186,7 +196,7 @@ export default function TodoFormModal(props: PropsType): JSX.Element {
 
           <ModalFooter>
             <Button colorScheme="teal" mr={3} onClick={() => confirmTodoForm()}>
-              {!todoForm?.id ? '登録' : '更新'}
+              {!todoForm?.id ? "登録" : "更新"}
             </Button>
             <Button
               colorScheme="gray"
